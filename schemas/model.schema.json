@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SanitizeModel",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tool_version",
+    "level",
+    "source",
+    "instruction",
+    "visible_text",
+    "visible_sha256",
+    "auxiliary",
+    "spotlight",
+    "flags"
+  ],
+  "properties": {
+    "tool_version": {"type": "string"},
+    "level": {"type": "integer", "minimum": 0, "maximum": 4},
+    "source": {"$ref": "#/$defs/source"},
+    "instruction": {"type": "string"},
+    "visible_text": {"type": "string"},
+    "visible_sha256": {"type": "string"},
+    "auxiliary": {"type": "object", "additionalProperties": {"type": "string"}},
+    "spotlight": {"type": "string"},
+    "flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hidden_withheld", "unicode_normalized", "render_unverified", "strict_cut"],
+      "properties": {
+        "hidden_withheld": {"type": "boolean"},
+        "unicode_normalized": {"type": "boolean"},
+        "render_unverified": {"type": "boolean"},
+        "strict_cut": {"type": "boolean"}
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "format", "locator", "sha256"],
+      "properties": {
+        "kind": {"type": "string"},
+        "format": {"type": "string"},
+        "locator": {"type": "string"},
+        "sha256": {"type": "string"}
+      }
+    }
+  }
+}

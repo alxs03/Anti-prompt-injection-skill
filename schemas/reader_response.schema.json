@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SanitizeReaderResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "quotes"],
+  "properties": {
+    "summary": {"type": "string"},
+    "quotes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text": {"type": "string"},
+          "kind": {"enum": ["quote", "number", "date", "name"]}
+        }
+      }
+    },
+    "numbers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["value", "quote"],
+        "properties": {
+          "value": {"type": ["string", "number"]},
+          "quote": {"type": "string"}
+        }
+      }
+    },
+    "actions": {"type": "array"}
+  }
+}

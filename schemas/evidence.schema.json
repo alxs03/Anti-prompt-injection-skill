@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SanitizeEvidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tool_version", "level", "source", "verdict", "findings", "infos", "classifier", "journal", "quarantine_sha256"],
+  "properties": {
+    "tool_version": {"type": "string"},
+    "level": {"type": "integer", "minimum": 0, "maximum": 4},
+    "source": {
+      "type": "object",
+      "required": ["kind", "format", "locator", "sha256"],
+      "properties": {
+        "kind": {"type": "string"},
+        "format": {"type": "string"},
+        "locator": {"type": "string"},
+        "sha256": {"type": "string"}
+      }
+    },
+    "verdict": {"enum": ["clean", "marked", "hidden_mismatch"]},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "severity", "message", "excerpt"],
+        "properties": {
+          "category": {"type": "string"},
+          "severity": {"enum": ["mismatch", "mark", "info"]},
+          "message": {"type": "string"},
+          "excerpt": {"type": "string"}
+        }
+      }
+    },
+    "infos": {"type": "array"},
+    "classifier": {"type": "object"},
+    "journal": {"type": "string"},
+    "quarantine_sha256": {"type": ["string", "null"]}
+  }
+}
