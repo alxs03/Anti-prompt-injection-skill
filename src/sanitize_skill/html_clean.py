@@ -25,6 +25,12 @@ _NAMED = {
 }
 
 
+def homoglyph_hook(text: str) -> list[dict]:
+    from sanitize_skill.homoglyphs import scan_homoglyphs
+
+    return scan_homoglyphs(text)
+
+
 def extract_html(data: bytes) -> Extract:
     soup = BeautifulSoup(data, "lxml")
     rules = _stylesheet(soup)

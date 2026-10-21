@@ -16,6 +16,12 @@ PKG = "http://schemas.openxmlformats.org/package/2006/relationships"
 _ZIP_MAX = 40_000_000
 
 
+def homoglyph_hook(text: str) -> list[dict]:
+    from sanitize_skill.homoglyphs import scan_homoglyphs
+
+    return scan_homoglyphs(text)
+
+
 def extract_office(data: bytes, max_total: int = _ZIP_MAX) -> tuple[str, Extract]:
     files = read_zip(data, max_total=max_total)
     kind = detect_kind(files)

@@ -19,7 +19,15 @@ def evaluate(level: int = 2) -> dict:
         blob = json.dumps(result.model, ensure_ascii=False)
         present = all(text in blob for text in case["expect_in_model"])
         absent = all(text not in blob for text in case["expect_absent"])
-        groups[case["group"]].append({"id": case["id"], "present": present, "absent": absent, "verdict": result.evidence["verdict"]})
+        groups[case["group"]].append(
+            {
+                "id": case["id"],
+                "present": present,
+                "absent": absent,
+                "verdict": result.evidence["verdict"],
+                "homoglyph": any(item["category"] == "homoglyph" for item in result.evidence["findings"]),
+            }
+        )
         if case["group"] == "benign" and result.evidence["verdict"] == "hidden_mismatch":
             benign_mismatch += 1
     hidden = groups["hidden"]
@@ -53,6 +61,7 @@ def main() -> None:
     (CORPUS / "metrics.json").write_text(json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
     print(
         f"hidden {metrics['hidden_caught']}/{metrics['hidden_total']}; "
+        f"homoglyph {sum(1 for item in metrics['cases']['hidden'] if item['homoglyph'])}; "
         f"visible_in_model {metrics['visible_reached_model']}/{metrics['visible_total']}; "
         f"benign_spoiled {metrics['benign_spoiled']}/{metrics['benign_total']}; "
         f"benign_mismatch {metrics['benign_mismatch']}; "

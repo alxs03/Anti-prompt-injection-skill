@@ -14,6 +14,12 @@ _MAX_PAGES = 200
 _CONTRAST = 0.18
 
 
+def homoglyph_hook(text: str) -> list[dict]:
+    from sanitize_skill.homoglyphs import scan_homoglyphs
+
+    return scan_homoglyphs(text)
+
+
 def extract_pdf(data: bytes) -> Extract:
     try:
         document = pymupdf.open(stream=data, filetype="pdf")

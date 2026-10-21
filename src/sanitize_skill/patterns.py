@@ -142,6 +142,16 @@ _CYRILLIC = re.compile(r"[А-Яа-яЁё]")
 _GREEK = re.compile(r"[\u0370-\u03FF]")
 
 
+def pattern_spans(text: str) -> list[tuple[str, int, int]]:
+    found: list[tuple[str, int, int]] = []
+    for category, pattern in _COMPILED:
+        for match in pattern.finditer(text):
+            found.append((category, match.start(), match.end()))
+            if len(found) >= 30:
+                return found
+    return found
+
+
 def has_signal(text: str) -> bool:
     return any(pattern.search(text) for _, pattern in _COMPILED)
 

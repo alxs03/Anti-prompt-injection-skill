@@ -1,6 +1,6 @@
 {
   "level": 2,
-  "hidden_total": 10,
+  "hidden_total": 11,
   "hidden_caught": 10,
   "visible_total": 4,
   "visible_reached_model": 4,
@@ -14,49 +14,57 @@
         "id": "article",
         "present": true,
         "absent": true,
-        "verdict": "clean"
+        "verdict": "clean",
+        "homoglyph": false
       },
       {
         "id": "note",
         "present": true,
         "absent": true,
-        "verdict": "clean"
+        "verdict": "clean",
+        "homoglyph": false
       },
       {
         "id": "contract",
         "present": true,
         "absent": true,
-        "verdict": "clean"
+        "verdict": "clean",
+        "homoglyph": false
       },
       {
         "id": "prices",
         "present": true,
         "absent": true,
-        "verdict": "clean"
+        "verdict": "clean",
+        "homoglyph": false
       },
       {
         "id": "slide",
         "present": true,
         "absent": true,
-        "verdict": "clean"
+        "verdict": "clean",
+        "homoglyph": false
       },
       {
         "id": "scan",
         "present": true,
         "absent": true,
-        "verdict": "clean"
+        "verdict": "clean",
+        "homoglyph": false
       },
       {
         "id": "dark",
         "present": true,
         "absent": true,
-        "verdict": "clean"
+        "verdict": "clean",
+        "homoglyph": false
       },
       {
         "id": "cookie",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
       }
     ],
     "hidden": [
@@ -64,61 +72,78 @@
         "id": "display-none",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
       },
       {
         "id": "white-html",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
       },
       {
         "id": "comment",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
       },
       {
         "id": "mode3",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
       },
       {
         "id": "white-pdf",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
       },
       {
         "id": "offpage",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
       },
       {
         "id": "vanish",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
       },
       {
         "id": "hidden-sheet",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
       },
       {
         "id": "offslide",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
       },
       {
         "id": "tags",
         "present": true,
         "absent": true,
-        "verdict": "hidden_mismatch"
+        "verdict": "hidden_mismatch",
+        "homoglyph": false
+      },
+      {
+        "id": "homoglyph",
+        "present": true,
+        "absent": true,
+        "verdict": "marked",
+        "homoglyph": true
       }
     ],
     "visible_instruction": [
@@ -126,25 +151,29 @@
         "id": "visible-html",
         "present": true,
         "absent": true,
-        "verdict": "marked"
+        "verdict": "marked",
+        "homoglyph": false
       },
       {
         "id": "visible-txt",
         "present": true,
         "absent": true,
-        "verdict": "marked"
+        "verdict": "marked",
+        "homoglyph": false
       },
       {
         "id": "visible-docx",
         "present": true,
         "absent": true,
-        "verdict": "marked"
+        "verdict": "marked",
+        "homoglyph": false
       },
       {
         "id": "visible-pptx",
         "present": true,
         "absent": true,
-        "verdict": "marked"
+        "verdict": "marked",
+        "homoglyph": false
       }
     ]
   }

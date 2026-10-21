@@ -3,11 +3,12 @@ import re
 
 from sanitize_skill import __version__
 from sanitize_skill.classify import classify_text
-from sanitize_skill.html_clean import extract_html
+from sanitize_skill.homoglyphs import scan_homoglyphs
+from sanitize_skill.html_clean import extract_html, homoglyph_hook as html_homoglyphs
 from sanitize_skill.models import INSTRUCTION, Extract, Result, SanitizeError
-from sanitize_skill.office_clean import extract_office
+from sanitize_skill.office_clean import extract_office, homoglyph_hook as office_homoglyphs
 from sanitize_skill.patterns import scan_patterns, sentence_flagged
-from sanitize_skill.pdf_clean import extract_pdf
+from sanitize_skill.pdf_clean import extract_pdf, homoglyph_hook as pdf_homoglyphs
 from sanitize_skill.textutil import make_finding, sha256_bytes, sha256_text, shield_markers, split_sentences
 from sanitize_skill.unicode_norm import normalize
 
@@ -39,6 +40,16 @@ def sanitize_text(text: str, *, level: int = 2, locator: str = "pasted-text") ->
     data = text.encode("utf-8")
     extract = Extract(visible=text)
     return _finish(data, extract, kind="text", level=level, source_kind="text", locator=locator)
+
+
+def _homoglyph_hook(kind: str):
+    return {
+        "html": html_homoglyphs,
+        "pdf": pdf_homoglyphs,
+        "docx": office_homoglyphs,
+        "xlsx": office_homoglyphs,
+        "pptx": office_homoglyphs,
+    }.get(kind, scan_homoglyphs)
 
 
 def _extract(data: bytes, *, filename: str, content_type: str | None) -> tuple[str, Extract]:
@@ -73,6 +84,9 @@ def _finish(data, extract: Extract, *, kind: str, level: int, source_kind: str, 
         for side in extract.side_text:
             findings.extend(scan_patterns(side))
         findings.extend(_scan_excerpts(findings))
+        hook = _homoglyph_hook(kind)
+        for blob in (text, *auxiliary.values(), *extract.side_text):
+            findings.extend(hook(blob))
     classifier = {"status": "not_requested"}
     if level >= 3:
         classifier = classify_text(text)
