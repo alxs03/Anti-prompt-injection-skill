@@ -193,6 +193,13 @@
     "expect_absent": []
   },
   {
+    "id": "render-diff",
+    "group": "hidden",
+    "path": "hidden/render_diff.pdf",
+    "expect_in_model": [],
+    "expect_absent": []
+  },
+  {
     "id": "visible-html",
     "group": "visible_instruction",
     "path": "visible_instruction/page.html",

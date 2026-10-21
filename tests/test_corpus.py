@@ -15,7 +15,7 @@ def test_committed_corpus_metrics_match_a_fresh_run():
     fresh = evaluate()
     committed = json.loads((ROOT / "corpus" / "metrics.json").read_text(encoding="utf-8"))
     assert fresh["hidden_caught"] == committed["hidden_caught"] == 10
-    assert fresh["hidden_total"] == 11
+    assert fresh["hidden_total"] == 12
     assert fresh["visible_reached_model"] == committed["visible_reached_model"] == 4
     assert fresh["benign_spoiled"] == committed["benign_spoiled"] == 0
     assert fresh["benign_total"] == 8

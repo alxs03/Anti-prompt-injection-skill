@@ -60,6 +60,74 @@ def test_html_offscreen_and_comment():
     assert result.evidence["verdict"] == "hidden_mismatch"
 
 
+def test_render_diff_withholds_a_changed_amount(monkeypatch):
+    from sanitize_skill.fixtures import pdf_image_with_invisible
+    from sanitize_skill import pdf_clean
+
+    visible = "Итого 100 рублей по договору поставки"
+    invisible = "Итого 1000 рублей по договору поставки"
+    data = pdf_image_with_invisible(visible, invisible)
+    monkeypatch.setattr(pdf_clean, "recognize_page", lambda page: visible)
+    result = sanitize_bytes(data, filename="render_diff.pdf", level=2)
+    assert "100" in result.visible_text
+    assert "1000" not in result.visible_text
+    assert any(item["category"] == "render_mismatch" for item in result.evidence["findings"])
+    assert result.model["flags"]["render_unverified"] is False
+    assert result.evidence["verdict"] == "hidden_mismatch"
+
+
+def test_matching_scan_layer_is_not_a_finding(monkeypatch):
+    from sanitize_skill.fixtures import pdf_image_with_invisible
+    from sanitize_skill import pdf_clean
+
+    data = pdf_image_with_invisible(VISIBLE, VISIBLE)
+    monkeypatch.setattr(pdf_clean, "recognize_page", lambda page: VISIBLE)
+    result = sanitize_bytes(data, filename="scan.pdf", level=2)
+    assert VISIBLE in result.visible_text
+    assert result.evidence["verdict"] == "clean"
+    assert result.model["flags"]["render_unverified"] is False
+
+
+def test_render_compare_skips_when_ocr_is_unavailable(monkeypatch):
+    from sanitize_skill.fixtures import pdf_image_with_invisible
+    from sanitize_skill import pdf_clean
+
+    data = pdf_image_with_invisible(VISIBLE, VISIBLE)
+    monkeypatch.setattr(pdf_clean, "recognize_page", lambda page: None)
+    result = sanitize_bytes(data, filename="scan.pdf", level=2)
+    assert VISIBLE in result.visible_text
+    assert result.model["flags"]["render_unverified"] is True
+    assert result.evidence["verdict"] == "clean"
+
+
+def test_number_change_fails_even_when_most_words_match():
+    from sanitize_skill.pdf_clean import layer_agrees, render_match_threshold
+
+    assert layer_agrees(VISIBLE, VISIBLE, 0.7)
+    changed = "Итого 100 рублей по договору поставки"
+    assert layer_agrees(VISIBLE, changed, 0.7) is False
+    assert render_match_threshold(config_path=__import__("pathlib").Path("missing-config.json")) == 0.7
+
+
+def test_real_ocr_compares_scan_with_the_rendered_page():
+    import shutil
+    from pathlib import Path
+
+    import pytest
+
+    if shutil.which("tesseract") is None:
+        pytest.skip("tesseract is not installed")
+    scan = sanitize_bytes(Path("corpus/benign/scan.pdf").read_bytes(), filename="scan.pdf", level=2)
+    assert VISIBLE in scan.visible_text
+    assert scan.evidence["verdict"] == "clean"
+    assert scan.model["flags"]["render_unverified"] is False
+    diff = sanitize_bytes(Path("corpus/hidden/render_diff.pdf").read_bytes(), filename="render_diff.pdf", level=2)
+    assert "100 рублей" in diff.visible_text
+    assert "1000" not in diff.visible_text
+    assert any(item["category"] == "render_mismatch" for item in diff.evidence["findings"])
+    assert diff.model["flags"]["render_unverified"] is False
+
+
 def test_pdf_mode3_extra_is_withheld_and_scan_layer_is_kept():
     both = pdf_document(
         [

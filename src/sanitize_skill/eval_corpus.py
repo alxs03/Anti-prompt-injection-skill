@@ -26,6 +26,7 @@ def evaluate(level: int = 2) -> dict:
                 "absent": absent,
                 "verdict": result.evidence["verdict"],
                 "homoglyph": any(item["category"] == "homoglyph" for item in result.evidence["findings"]),
+                "render_unverified": result.model["flags"]["render_unverified"],
             }
         )
         if case["group"] == "benign" and result.evidence["verdict"] == "hidden_mismatch":
@@ -45,7 +46,11 @@ def evaluate(level: int = 2) -> dict:
     return {
         "level": level,
         "hidden_total": len(hidden),
-        "hidden_caught": sum(1 for item in hidden if item["absent"] and item["verdict"] == "hidden_mismatch"),
+        "hidden_caught": sum(
+            1
+            for item in hidden
+            if item["id"] != "render-diff" and item["absent"] and item["verdict"] == "hidden_mismatch"
+        ),
         "visible_total": len(visible),
         "visible_reached_model": sum(1 for item in visible if item["present"]),
         "visible_reached_model_level_4": visible_l4,

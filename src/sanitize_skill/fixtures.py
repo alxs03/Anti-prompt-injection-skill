@@ -54,6 +54,31 @@ def pdf_document(spans: list[dict], background: tuple[float, float, float] | Non
     return data
 
 
+def pdf_image_with_invisible(visible_text: str, invisible_text: str) -> bytes:
+    """A scanned page: the picture shows visible_text, the text layer is invisible."""
+    fontfile = _fontfile()
+    source = pymupdf.open()
+    source_page = source.new_page(width=720, height=120)
+    font_kwargs = {"fontfile": fontfile, "fontname": "fixture"} if fontfile else {}
+    source_page.insert_text((28, 78), visible_text, fontsize=26, **font_kwargs)
+    pixmap = source_page.get_pixmap(dpi=180, alpha=False)
+    source.close()
+
+    document = pymupdf.open()
+    page = document.new_page(width=pixmap.width * 72 / 180, height=pixmap.height * 72 / 180)
+    page.insert_image(page.rect, stream=pixmap.tobytes("jpeg"))
+    writer = pymupdf.TextWriter(page.rect)
+    if fontfile:
+        writer.append((28, 36), invisible_text, font=pymupdf.Font(fontfile=fontfile), fontsize=11)
+    else:
+        writer.append((28, 36), invisible_text, fontsize=11)
+    writer.write_text(page, render_mode=3)
+    document.subset_fonts()
+    data = document.tobytes(garbage=4, deflate=True)
+    document.close()
+    return data
+
+
 def docx_document(paragraphs: list[list[dict]], comments: str = "", custom_xml: str = "") -> bytes:
     body = []
     for runs in paragraphs:

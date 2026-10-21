@@ -1,6 +1,6 @@
 {
   "level": 2,
-  "hidden_total": 11,
+  "hidden_total": 12,
   "hidden_caught": 10,
   "visible_total": 4,
   "visible_reached_model": 4,
@@ -15,56 +15,64 @@
         "present": true,
         "absent": true,
         "verdict": "clean",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "note",
         "present": true,
         "absent": true,
         "verdict": "clean",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "contract",
         "present": true,
         "absent": true,
         "verdict": "clean",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "prices",
         "present": true,
         "absent": true,
         "verdict": "clean",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "slide",
         "present": true,
         "absent": true,
         "verdict": "clean",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "scan",
         "present": true,
         "absent": true,
         "verdict": "clean",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": true
       },
       {
         "id": "dark",
         "present": true,
         "absent": true,
         "verdict": "clean",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "cookie",
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       }
     ],
     "hidden": [
@@ -73,77 +81,96 @@
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "white-html",
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "comment",
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "mode3",
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "white-pdf",
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "offpage",
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "vanish",
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "hidden-sheet",
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "offslide",
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "tags",
         "present": true,
         "absent": true,
         "verdict": "hidden_mismatch",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "homoglyph",
         "present": true,
         "absent": true,
         "verdict": "marked",
-        "homoglyph": true
+        "homoglyph": true,
+        "render_unverified": false
+      },
+      {
+        "id": "render-diff",
+        "present": true,
+        "absent": true,
+        "verdict": "clean",
+        "homoglyph": false,
+        "render_unverified": true
       }
     ],
     "visible_instruction": [
@@ -152,28 +179,32 @@
         "present": true,
         "absent": true,
         "verdict": "marked",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "visible-txt",
         "present": true,
         "absent": true,
         "verdict": "marked",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "visible-docx",
         "present": true,
         "absent": true,
         "verdict": "marked",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "visible-pptx",
         "present": true,
         "absent": true,
         "verdict": "marked",
-        "homoglyph": false
+        "homoglyph": false,
+        "render_unverified": false
       }
     ]
   }

@@ -1,4 +1,6 @@
+import json
 import math
+import re
 import shutil
 import subprocess
 import tempfile
@@ -99,15 +101,13 @@ def _page(page, hidden_layers: set[str]) -> tuple[str, list[tuple[str, str]], bo
     if not ocr_layer:
         return "", hidden, False
     ocr_text = _join(ocr_layer)
-    extras = _ocr_extras(page, ocr_text)
-    if extras is None:
+    recognized = recognize_page(page)
+    if recognized is None:
         return ocr_text, hidden, True
-    if not extras:
+    if layer_agrees(ocr_text, recognized, render_match_threshold()):
         return ocr_text, hidden, False
-    kept = _without_sentences(ocr_text, extras)
-    for extra in extras:
-        hidden.append((extra, "pdf_render_mode_3"))
-    return kept, hidden, False
+    hidden.append((ocr_text, "render_mismatch"))
+    return recognized, hidden, False
 
 
 class _PixmapCache:
@@ -231,17 +231,61 @@ def _span_text(span: dict) -> str:
     return "".join(chars)
 
 
-def _ocr_extras(page, ocr_text: str) -> list[str] | None:
+def render_match_threshold(config_path: Path | None = None) -> float:
+    """Share of invisible-layer words that must appear on the rendered page."""
+    default = 0.7
+    path = config_path or (Path.home() / ".sanitize" / "config.json")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return default
+    value = data.get("render_match", default)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return default
+    value = float(value)
+    if not 0.0 <= value <= 1.0:
+        return default
+    return value
+
+
+def layer_agrees(extracted: str, recognized: str, threshold: float) -> bool:
+    extracted_words = _words(extracted)
+    recognized_words = set(_words(recognized))
+    if not extracted_words:
+        return True
+    coverage = sum(1 for word in extracted_words if word in recognized_words) / len(extracted_words)
+    if coverage < threshold:
+        return False
+    recognized_numbers = _numbers(recognized)
+    return all(number in recognized_numbers for number in _numbers(extracted))
+
+
+def recognize_page(page) -> str | None:
+    """OCR the rendered page. None means the page could not be compared."""
     executable = shutil.which("tesseract")
     if not executable:
         return None
     try:
-        pixmap = page.get_pixmap(dpi=150, alpha=False)
+        pixmap = page.get_pixmap(dpi=200, alpha=False)
+        png = pixmap.tobytes("png")
+    except Exception:
+        return None
+    for language in ("rus+eng", "eng"):
+        recognized = _tesseract(executable, png, language)
+        if recognized is None:
+            continue
+        if sum(char.isalnum() for char in recognized) >= 8:
+            return recognized
+    return None
+
+
+def _tesseract(executable: str, png: bytes, language: str) -> str | None:
+    try:
         with tempfile.TemporaryDirectory() as folder:
             image = Path(folder) / "page.png"
-            image.write_bytes(pixmap.tobytes("png"))
+            image.write_bytes(png)
             completed = subprocess.run(
-                [executable, str(image), "stdout", "-l", "eng+rus"],
+                [executable, str(image), "stdout", "-l", language],
                 check=False,
                 capture_output=True,
                 timeout=60,
@@ -250,32 +294,14 @@ def _ocr_extras(page, ocr_text: str) -> list[str] | None:
         return None
     if completed.returncode != 0:
         return None
-    recognized = completed.stdout.decode("utf-8", "replace")
-    if sum(char.isalnum() for char in recognized) < 20:
-        return None
-    return _extra_sentences(ocr_text, recognized)
+    return completed.stdout.decode("utf-8", "replace")
 
 
-def _extra_sentences(candidate: str, basis: str) -> list[str]:
-    base = " ".join(basis.split()).casefold()
-    extras = []
-    for sentence in _sentences(candidate):
-        folded = " ".join(sentence.split()).casefold()
-        if folded and folded not in base:
-            extras.append(sentence)
-    return extras
+def _words(text: str) -> list[str]:
+    normalized = text.replace("\u00a0", " ").casefold()
+    return re.findall(r"[^\W\d_]{2,}|\d{2,}", normalized, flags=re.UNICODE)
 
 
-def _sentences(text: str) -> list[str]:
-    parts = []
-    for line in text.splitlines():
-        line = line.strip()
-        if line:
-            parts.append(line)
-    return parts
-
-
-def _without_sentences(text: str, extras: list[str]) -> str:
-    drop = {" ".join(item.split()) for item in extras}
-    kept = [line for line in text.splitlines() if " ".join(line.split()) not in drop]
-    return "\n".join(kept).strip()
+def _numbers(text: str) -> set[str]:
+    compact = re.sub(r"(?<=\d)\s+(?=\d)", "", text.replace("\u00a0", " "))
+    return set(re.findall(r"\d{2,}", compact))
