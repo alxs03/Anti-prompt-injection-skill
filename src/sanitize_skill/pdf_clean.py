@@ -90,9 +90,14 @@ def _page(page, hidden_layers: set[str]) -> tuple[str, list[tuple[str, str]], bo
         if reasons == ["pdf_render_mode_3"]:
             ocr_layer.append(_item(span, text))
         elif not reasons:
-            painted.append(_item(span, text))
+            if _has_ink(page, span.get("bbox")):
+                painted.append(_item(span, text))
+            else:
+                hidden.append((text, "pdf_clip"))
         else:
             hidden.append((text, reasons[0]))
+    for text in _invisible_dict_text(page):
+        hidden.append((text, "pdf_render_mode_7"))
     painted_text = _join(painted)
     if painted:
         for item in ocr_layer:
@@ -119,6 +124,66 @@ class _PixmapCache:
         if self.pix is None:
             self.pix = self.page.get_pixmap(alpha=False, colorspace=pymupdf.csRGB)
         return self.pix
+
+
+def _has_ink(page, bbox) -> bool:
+    """False when a span's box is flat on the rendered page, as with a clip."""
+    if not bbox:
+        return True
+    try:
+        pixmap = _pixmap(page)
+    except Exception:
+        return True
+    x0 = max(0, int(bbox[0]))
+    y0 = max(0, int(bbox[1]))
+    x1 = min(pixmap.width, int(bbox[2]) + 1)
+    y1 = min(pixmap.height, int(bbox[3]) + 1)
+    if x1 - x0 < 2 or y1 - y0 < 2 or (x1 - x0) * (y1 - y0) > 200_000:
+        return True
+    colors = [pixmap.pixel(x, y)[:3] for y in range(y0, y1) for x in range(x0, x1)]
+    if len(colors) < 4:
+        return True
+    background = _common_color(colors)
+    ink = sum(1 for color in colors if _rgb_distance(color, background) > 40)
+    return ink >= 3
+
+
+def _pixmap(page):
+    cache = getattr(page, "_sanitize_pix", None)
+    if cache is None:
+        cache = _PixmapCache(page)
+        setattr(page, "_sanitize_pix", cache)
+    return cache.get()
+
+
+def _common_color(colors: list[tuple[int, int, int]]) -> tuple[int, int, int]:
+    counts: dict[tuple[int, int, int], int] = {}
+    for red, green, blue in colors:
+        key = (red // 16, green // 16, blue // 16)
+        counts[key] = counts.get(key, 0) + 1
+    red, green, blue = max(counts, key=counts.get)
+    return (red * 16 + 8, green * 16 + 8, blue * 16 + 8)
+
+
+def _rgb_distance(left: tuple[int, int, int], right: tuple[int, int, int]) -> float:
+    return sum((a - b) ** 2 for a, b in zip(left, right)) ** 0.5
+
+
+def _invisible_dict_text(page) -> list[str]:
+    """Text get_texttrace skips. Render mode 7 arrives here with alpha 0."""
+    try:
+        blocks = page.get_text("dict").get("blocks") or []
+    except Exception:
+        return []
+    found = []
+    for block in blocks:
+        for line in block.get("lines") or []:
+            for span in line.get("spans") or []:
+                alpha = span.get("alpha", 255)
+                text = (span.get("text") or "").replace("\u00a0", " ").strip()
+                if text and alpha == 0:
+                    found.append(text)
+    return found
 
 
 def _reasons(page, span, hidden_layers: set[str]) -> list[str]:

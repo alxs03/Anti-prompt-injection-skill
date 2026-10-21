@@ -54,6 +54,33 @@ def pdf_document(spans: list[dict], background: tuple[float, float, float] | Non
     return data
 
 
+def pdf_clipped(visible: str, hidden: str) -> bytes:
+    """Paint both strings, then clip the second one out of the rendered page."""
+    fontfile = _fontfile()
+    document = pymupdf.open()
+    page = document.new_page()
+    kwargs = {"fontfile": fontfile, "fontname": "fixture"} if fontfile else {}
+    page.insert_text((72, 80), visible, fontsize=14, **kwargs)
+    page.insert_text((72, 400), hidden, fontsize=14, **kwargs)
+    xref = page.get_contents()[-1]
+    stream = document.xref_stream(xref).lstrip()
+    if stream.startswith(b"q"):
+        stream = b"q\n0 0 1 1 re\nW\nn\n" + stream[1:]
+        document.update_stream(xref, stream)
+    document.subset_fonts()
+    data = document.tobytes(garbage=4, deflate=True)
+    document.close()
+    return data
+
+
+def pdf_subset(data: bytes) -> bytes:
+    document = pymupdf.open(stream=data, filetype="pdf")
+    document.subset_fonts()
+    packed = document.tobytes(garbage=4, deflate=True)
+    document.close()
+    return packed
+
+
 def pdf_image_with_invisible(visible_text: str, invisible_text: str) -> bytes:
     """A scanned page: the picture shows visible_text, the text layer is invisible."""
     fontfile = _fontfile()

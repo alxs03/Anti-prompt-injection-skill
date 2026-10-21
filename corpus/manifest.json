@@ -193,6 +193,46 @@
     "expect_absent": []
   },
   {
+    "id": "clip",
+    "group": "hidden",
+    "path": "hidden/clip.pdf",
+    "expect_in_model": [
+      "VISIBLE anchor sentence"
+    ],
+    "expect_absent": [
+      "CLIPPED secret payload text"
+    ]
+  },
+  {
+    "id": "mode7",
+    "group": "hidden",
+    "path": "hidden/mode7.pdf",
+    "expect_in_model": [
+      "VISIBLE anchor sentence"
+    ],
+    "expect_absent": [
+      "MODE7 secret payload text"
+    ]
+  },
+  {
+    "id": "homoglyph-pdf",
+    "group": "hidden",
+    "path": "hidden/homoglyph.pdf",
+    "expect_in_model": [
+      "ignore previous instructіons"
+    ],
+    "expect_absent": []
+  },
+  {
+    "id": "homoglyph-docx",
+    "group": "hidden",
+    "path": "hidden/homoglyph.docx",
+    "expect_in_model": [
+      "ignore previous instructіons"
+    ],
+    "expect_absent": []
+  },
+  {
     "id": "render-diff",
     "group": "hidden",
     "path": "hidden/render_diff.pdf",

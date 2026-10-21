@@ -1,7 +1,7 @@
 {
   "level": 2,
-  "hidden_total": 12,
-  "hidden_caught": 10,
+  "hidden_total": 16,
+  "hidden_caught": 12,
   "visible_total": 4,
   "visible_reached_model": 4,
   "visible_reached_model_level_4": 0,
@@ -158,6 +158,38 @@
       },
       {
         "id": "homoglyph",
+        "present": true,
+        "absent": true,
+        "verdict": "marked",
+        "homoglyph": true,
+        "render_unverified": false
+      },
+      {
+        "id": "clip",
+        "present": true,
+        "absent": true,
+        "verdict": "hidden_mismatch",
+        "homoglyph": false,
+        "render_unverified": false
+      },
+      {
+        "id": "mode7",
+        "present": true,
+        "absent": true,
+        "verdict": "hidden_mismatch",
+        "homoglyph": false,
+        "render_unverified": false
+      },
+      {
+        "id": "homoglyph-pdf",
+        "present": true,
+        "absent": true,
+        "verdict": "marked",
+        "homoglyph": true,
+        "render_unverified": false
+      },
+      {
+        "id": "homoglyph-docx",
         "present": true,
         "absent": true,
         "verdict": "marked",
