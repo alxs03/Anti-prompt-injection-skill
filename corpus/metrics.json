@@ -1,11 +1,11 @@
 {
   "level": 2,
-  "hidden_total": 16,
-  "hidden_caught": 12,
+  "hidden_total": 23,
+  "hidden_caught": 13,
   "visible_total": 4,
   "visible_reached_model": 4,
   "visible_reached_model_level_4": 0,
-  "benign_total": 8,
+  "benign_total": 10,
   "benign_spoiled": 0,
   "benign_mismatch": 1,
   "cases": {
@@ -57,6 +57,22 @@
         "verdict": "clean",
         "homoglyph": false,
         "render_unverified": true
+      },
+      {
+        "id": "scan-rus",
+        "present": true,
+        "absent": true,
+        "verdict": "clean",
+        "homoglyph": false,
+        "render_unverified": true
+      },
+      {
+        "id": "eml-benign",
+        "present": true,
+        "absent": true,
+        "verdict": "clean",
+        "homoglyph": false,
+        "render_unverified": false
       },
       {
         "id": "dark",
@@ -194,6 +210,62 @@
         "absent": true,
         "verdict": "marked",
         "homoglyph": true,
+        "render_unverified": false
+      },
+      {
+        "id": "homoglyph-html",
+        "present": true,
+        "absent": true,
+        "verdict": "marked",
+        "homoglyph": true,
+        "render_unverified": false
+      },
+      {
+        "id": "homoglyph-pptx",
+        "present": true,
+        "absent": true,
+        "verdict": "marked",
+        "homoglyph": true,
+        "render_unverified": false
+      },
+      {
+        "id": "meta-pdf",
+        "present": true,
+        "absent": true,
+        "verdict": "marked",
+        "homoglyph": false,
+        "render_unverified": false
+      },
+      {
+        "id": "meta-docx",
+        "present": true,
+        "absent": true,
+        "verdict": "marked",
+        "homoglyph": false,
+        "render_unverified": false
+      },
+      {
+        "id": "meta-xlsx",
+        "present": true,
+        "absent": true,
+        "verdict": "marked",
+        "homoglyph": false,
+        "render_unverified": false
+      },
+      {
+        "id": "meta-pptx",
+        "present": true,
+        "absent": true,
+        "verdict": "marked",
+        "homoglyph": false,
+        "render_unverified": false
+      },
+      {
+        "id": "eml-hidden",
+        "present": true,
+        "absent": true,
+        "verdict": "hidden_mismatch",
+        "homoglyph": false,
         "render_unverified": false
       },
       {

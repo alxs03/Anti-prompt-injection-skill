@@ -3,6 +3,7 @@ import re
 
 from sanitize_skill import __version__
 from sanitize_skill.classify import classify_text
+from sanitize_skill.eml_clean import extract_eml
 from sanitize_skill.homoglyphs import scan_homoglyphs
 from sanitize_skill.html_clean import extract_html, homoglyph_hook as html_homoglyphs
 from sanitize_skill.models import INSTRUCTION, Extract, Result, SanitizeError
@@ -49,10 +50,13 @@ def _homoglyph_hook(kind: str):
         "docx": office_homoglyphs,
         "xlsx": office_homoglyphs,
         "pptx": office_homoglyphs,
+        "eml": scan_homoglyphs,
     }.get(kind, scan_homoglyphs)
 
 
 def _extract(data: bytes, *, filename: str, content_type: str | None) -> tuple[str, Extract]:
+    if _looks_eml(data, filename, content_type):
+        return "eml", extract_eml(data)
     if data.startswith(b"%PDF"):
         return "pdf", extract_pdf(data)
     if data[:2] == b"PK":
@@ -83,6 +87,19 @@ def _finish(data, extract: Extract, *, kind: str, level: int, source_kind: str, 
             findings.extend(scan_patterns(value))
         for side in extract.side_text:
             findings.extend(scan_patterns(side))
+        for prop in extract.properties:
+            hits = scan_patterns(prop)
+            hits.extend(scan_homoglyphs(prop))
+            if hits:
+                findings.extend(hits)
+                findings.append(
+                    make_finding(
+                        "document_metadata",
+                        "mark",
+                        "File properties matched a heuristic and were left out of the model.",
+                        prop,
+                    )
+                )
         findings.extend(_scan_excerpts(findings))
         hook = _homoglyph_hook(kind)
         for blob in (text, *auxiliary.values(), *extract.side_text):
@@ -215,6 +232,12 @@ def _reject_unsupported(data: bytes) -> None:
         raise SanitizeError("image files are not extracted; text baked into pixels is out of scope")
     if data.startswith(b"\xd0\xcf\x11\xe0"):
         raise SanitizeError("legacy office .doc/.xls is not supported; save as docx or xlsx")
+
+
+def _looks_eml(_data: bytes, filename: str, content_type: str | None) -> bool:
+    if filename.lower().endswith(".eml"):
+        return True
+    return bool(content_type and "message/rfc822" in content_type.lower())
 
 
 def _looks_html(data: bytes, filename: str, content_type: str | None) -> bool:

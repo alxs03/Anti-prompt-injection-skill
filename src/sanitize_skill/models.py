@@ -21,6 +21,7 @@ class Extract:
     findings: list[dict] = field(default_factory=list)
     infos: list[dict] = field(default_factory=list)
     side_text: list[str] = field(default_factory=list)
+    properties: list[str] = field(default_factory=list)
     render_unverified: bool = False
 
 

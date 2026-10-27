@@ -73,6 +73,49 @@ def pdf_clipped(visible: str, hidden: str) -> bytes:
     return data
 
 
+def pdf_with_title(body: str, title: str) -> bytes:
+    document = pymupdf.open()
+    page = document.new_page()
+    fontfile = _fontfile()
+    kwargs = {"fontfile": fontfile, "fontname": "fixture"} if fontfile else {}
+    page.insert_text((72, 80), body, fontsize=14, **kwargs)
+    document.set_metadata({"title": title})
+    document.subset_fonts()
+    data = document.tobytes(garbage=4, deflate=True)
+    document.close()
+    return data
+
+
+def with_core_title(package: bytes, title: str) -> bytes:
+    core = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:title>{escape(title)}</dc:title>
+</cp:coreProperties>"""
+    source = io.BytesIO(package)
+    output = io.BytesIO()
+    with zipfile.ZipFile(source) as incoming, zipfile.ZipFile(output, "w") as outgoing:
+        for info in incoming.infolist():
+            if info.filename != "docProps/core.xml":
+                outgoing.writestr(info, incoming.read(info))
+        outgoing.writestr("docProps/core.xml", core.encode("utf-8"))
+    return output.getvalue()
+
+
+def eml_message(body: str, *, subject: str = "Договор", attachment: tuple[str, bytes, str] | None = None) -> bytes:
+    from email.message import EmailMessage
+
+    message = EmailMessage()
+    message["From"] = "sender@example.com"
+    message["To"] = "reader@example.com"
+    message["Subject"] = subject
+    message.set_content(body)
+    if attachment:
+        filename, payload, subtype = attachment
+        maintype = "application" if subtype == "pdf" else "text"
+        message.add_attachment(payload, maintype=maintype, subtype=subtype, filename=filename)
+    return message.as_bytes()
+
+
 def pdf_subset(data: bytes) -> bytes:
     document = pymupdf.open(stream=data, filetype="pdf")
     document.subset_fonts()

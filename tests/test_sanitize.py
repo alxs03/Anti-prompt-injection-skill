@@ -60,6 +60,60 @@ def test_html_offscreen_and_comment():
     assert result.evidence["verdict"] == "hidden_mismatch"
 
 
+def test_file_properties_stay_out_of_the_model():
+    from sanitize_skill.fixtures import docx_document, pdf_with_title, pptx_deck, with_core_title, xlsx_workbook
+
+    pdf = sanitize_bytes(pdf_with_title(VISIBLE, PAYLOAD), filename="meta.pdf", level=2)
+    docx = sanitize_bytes(with_core_title(docx_document([[{"text": VISIBLE}]]), PAYLOAD), filename="meta.docx", level=2)
+    sheet = sanitize_bytes(
+        with_core_title(xlsx_workbook([{"name": "Цены", "rows": [["Сумма", "1000"]]}]), PAYLOAD),
+        filename="meta.xlsx",
+        level=2,
+    )
+    deck = sanitize_bytes(
+        with_core_title(pptx_deck([{"shapes": [{"text": VISIBLE}]}]), PAYLOAD),
+        filename="meta.pptx",
+        level=2,
+    )
+    for result in (pdf, docx, sheet, deck):
+        blob = __import__("json").dumps(result.model, ensure_ascii=False)
+        assert PAYLOAD not in blob
+        assert any(item["category"] == "document_metadata" for item in result.evidence["findings"])
+        assert result.evidence["verdict"] == "marked"
+
+
+def test_eml_hides_attachment_payload():
+    from sanitize_skill.fixtures import eml_message, html_document
+
+    benign = sanitize_bytes(eml_message(VISIBLE + "\n"), filename="benign.eml", level=2)
+    assert VISIBLE in benign.visible_text
+    assert benign.evidence["verdict"] == "clean"
+    hidden = sanitize_bytes(
+        eml_message(
+            VISIBLE + "\n",
+            attachment=(
+                "note.html",
+                html_document(f"<p>{VISIBLE}</p><div style=\"display:none\">{PAYLOAD}</div>"),
+                "html",
+            ),
+        ),
+        filename="hidden.eml",
+        level=2,
+    )
+    assert VISIBLE in hidden.visible_text
+    assert PAYLOAD not in hidden.visible_text
+    assert hidden.evidence["verdict"] == "hidden_mismatch"
+
+
+def test_mixed_language_threshold_keeps_one_ocr_miss_and_rejects_a_changed_number():
+    from sanitize_skill.pdf_clean import layer_agrees
+
+    page = "Итого 1000 рублей total"
+    noisy = "Итого 1000 рублей tota1"
+    assert layer_agrees(page, noisy, 0.7)
+    assert layer_agrees(page, "Итого 100 рублей total", 0.7) is False
+
+
 def test_clip_and_mode7_are_withheld():
     from sanitize_skill.fixtures import pdf_clipped, pdf_document, pdf_subset
 

@@ -26,10 +26,25 @@ def extract_office(data: bytes, max_total: int = _ZIP_MAX) -> tuple[str, Extract
     files = read_zip(data, max_total=max_total)
     kind = detect_kind(files)
     if kind == "docx":
-        return kind, extract_docx(files)
-    if kind == "xlsx":
-        return kind, extract_xlsx(files)
-    return kind, extract_pptx(files)
+        extract = extract_docx(files)
+    elif kind == "xlsx":
+        extract = extract_xlsx(files)
+    else:
+        extract = extract_pptx(files)
+    extract.properties.extend(_office_properties(files))
+    return kind, extract
+
+
+def _office_properties(files: dict[str, bytes]) -> list[str]:
+    found = []
+    for name in ("docProps/core.xml", "docProps/app.xml", "docProps/custom.xml"):
+        blob = files.get(name)
+        if not blob:
+            continue
+        text = _plain_xml_text(blob)
+        if text:
+            found.append(text)
+    return found
 
 
 def read_zip(data: bytes, max_total: int = _ZIP_MAX) -> dict[str, bytes]:

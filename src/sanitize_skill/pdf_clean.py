@@ -39,11 +39,14 @@ def extract_pdf(data: bytes) -> Extract:
         if document.page_count > _MAX_PAGES:
             infos.append(make_info("pdf_truncated", f"Only the first {_MAX_PAGES} pages were read."))
         for index in range(page_count):
-            page_text, page_hidden, page_unverified = _page(document[index], hidden_layers)
+            page = document[index]
+            page_text, page_hidden, page_unverified = _page(page, hidden_layers)
             if page_text:
                 visible_parts.append(page_text)
             hidden.extend(page_hidden)
             unverified = unverified or page_unverified
+            if hasattr(page, "_sanitize_pix"):
+                delattr(page, "_sanitize_pix")
         if unverified:
             infos.append(
                 make_info(
@@ -56,10 +59,24 @@ def extract_pdf(data: bytes) -> Extract:
             visible=visible,
             findings=findings_from_hidden(hidden, visible, has_signal),
             infos=infos,
+            properties=_pdf_properties(document),
             render_unverified=unverified,
         )
     finally:
         document.close()
+
+
+def _pdf_properties(document) -> list[str]:
+    try:
+        meta = document.metadata or {}
+    except Exception:
+        return []
+    found = []
+    for key in ("title", "author", "subject", "keywords"):
+        value = str(meta.get(key) or "").strip()
+        if value:
+            found.append(value)
+    return found
 
 
 def _hidden_layers(document) -> set[str]:
