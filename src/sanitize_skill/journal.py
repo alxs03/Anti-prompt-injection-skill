@@ -12,6 +12,60 @@ def journal_dir(explicit: Path | None = None, home: Path | None = None) -> Path:
     return base / ".sanitize"
 
 
+def purge_expired(directory: Path, days: int, now: datetime | None = None) -> int:
+    """Drop quarantine files and journal lines older than ``days``."""
+    moment = now or datetime.now(timezone.utc)
+    cutoff = moment.timestamp() - days * 86400
+    removed = 0
+    if directory.is_dir():
+        for folder_name in ("quarantine", "evidence"):
+            folder = directory / folder_name
+            if not folder.is_dir():
+                continue
+            for item in folder.iterdir():
+                if item.is_file() and item.stat().st_mtime < cutoff:
+                    item.unlink()
+                    removed += 1
+        for name in ("files.jsonl", "runs.jsonl"):
+            removed += _drop_old_lines(directory / name, cutoff)
+    return removed
+
+
+def retention_days(config_path: Path | None = None) -> int:
+    default = 14
+    path = config_path or (Path.home() / ".sanitize" / "config.json")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return default
+    value = data.get("retention_days", default)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return default
+    return value
+
+
+def _drop_old_lines(path: Path, cutoff: float) -> int:
+    if not path.is_file():
+        return 0
+    kept: list[str] = []
+    removed = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            stamp = datetime.fromisoformat(json.loads(line)["time"])
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            kept.append(line)
+            continue
+        if stamp.timestamp() < cutoff:
+            removed += 1
+            continue
+        kept.append(line)
+    if removed:
+        path.write_text(("\n".join(kept) + "\n") if kept else "", encoding="utf-8")
+    return removed
+
+
 def record_file(directory: Path, record: dict) -> str:
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / "files.jsonl"

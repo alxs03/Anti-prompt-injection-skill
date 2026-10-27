@@ -3,6 +3,7 @@
 import io
 import zipfile
 from pathlib import Path
+from typing import Any
 from xml.sax.saxutils import escape
 
 import pymupdf
@@ -21,6 +22,14 @@ def _fontfile() -> str | None:
     return None
 
 
+def _insert(page: Any, point: tuple[float, float], text: str, **extra: Any) -> None:
+    fontfile = _fontfile()
+    if fontfile:
+        page.insert_text(point, text, fontfile=fontfile, fontname="fixture", **extra)
+    else:
+        page.insert_text(point, text, **extra)
+
+
 def html_document(body: str, head: str = "") -> bytes:
     page = (
         "<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
@@ -34,20 +43,15 @@ def pdf_document(spans: list[dict], background: tuple[float, float, float] | Non
     page = document.new_page()
     if background is not None:
         page.draw_rect(page.rect, color=background, fill=background)
-    fontfile = _fontfile()
     for span in spans:
-        kwargs = {}
-        if fontfile:
-            kwargs["fontfile"] = fontfile
-            kwargs["fontname"] = "fixture"
-        page.insert_text(
+        _insert(
+            page,
             span.get("point", (72, 72)),
             span["text"],
             fontsize=span.get("fontsize", 12),
             color=span.get("color", (0, 0, 0)),
             render_mode=span.get("render_mode", 0),
             fill_opacity=span.get("opacity", 1),
-            **kwargs,
         )
     data = document.tobytes()
     document.close()
@@ -56,12 +60,10 @@ def pdf_document(spans: list[dict], background: tuple[float, float, float] | Non
 
 def pdf_clipped(visible: str, hidden: str) -> bytes:
     """Paint both strings, then clip the second one out of the rendered page."""
-    fontfile = _fontfile()
     document = pymupdf.open()
     page = document.new_page()
-    kwargs = {"fontfile": fontfile, "fontname": "fixture"} if fontfile else {}
-    page.insert_text((72, 80), visible, fontsize=14, **kwargs)
-    page.insert_text((72, 400), hidden, fontsize=14, **kwargs)
+    _insert(page, (72, 80), visible, fontsize=14)
+    _insert(page, (72, 400), hidden, fontsize=14)
     xref = page.get_contents()[-1]
     stream = document.xref_stream(xref).lstrip()
     if stream.startswith(b"q"):
@@ -76,9 +78,7 @@ def pdf_clipped(visible: str, hidden: str) -> bytes:
 def pdf_with_title(body: str, title: str) -> bytes:
     document = pymupdf.open()
     page = document.new_page()
-    fontfile = _fontfile()
-    kwargs = {"fontfile": fontfile, "fontname": "fixture"} if fontfile else {}
-    page.insert_text((72, 80), body, fontsize=14, **kwargs)
+    _insert(page, (72, 80), body, fontsize=14)
     document.set_metadata({"title": title})
     document.subset_fonts()
     data = document.tobytes(garbage=4, deflate=True)
@@ -116,6 +116,38 @@ def eml_message(body: str, *, subject: str = "Договор", attachment: tuple
     return message.as_bytes()
 
 
+def pdf_multipage(pages: list[str]) -> bytes:
+    document = pymupdf.open()
+    for text in pages:
+        page = document.new_page()
+        _insert(page, (72, 80), text, fontsize=14)
+    document.subset_fonts()
+    data = document.tobytes(garbage=4, deflate=True)
+    document.close()
+    return data
+
+
+def docx_with_revision(visible: str, deleted: str, inserted: str) -> bytes:
+    paragraph = (
+        "<w:p>"
+        f'<w:del w:id="1" w:author="editor"><w:r><w:delText xml:space="preserve">{escape(deleted)}</w:delText></w:r></w:del>'
+        f'<w:ins w:id="2" w:author="editor"><w:r><w:t xml:space="preserve">{escape(inserted)}</w:t></w:r></w:ins>'
+        "</w:p>"
+        f'<w:p><w:r><w:t xml:space="preserve">{escape(visible)}</w:t></w:r></w:p>'
+    )
+    document = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>{paragraph}</w:body>
+</w:document>"""
+    return _zip(
+        {
+            "[Content_Types].xml": _content_types("word"),
+            "_rels/.rels": _root_rels("word/document.xml"),
+            "word/document.xml": document,
+        }
+    )
+
+
 def pdf_subset(data: bytes) -> bytes:
     document = pymupdf.open(stream=data, filetype="pdf")
     document.subset_fonts()
@@ -129,8 +161,7 @@ def pdf_image_with_invisible(visible_text: str, invisible_text: str) -> bytes:
     fontfile = _fontfile()
     source = pymupdf.open()
     source_page = source.new_page(width=720, height=120)
-    font_kwargs = {"fontfile": fontfile, "fontname": "fixture"} if fontfile else {}
-    source_page.insert_text((28, 78), visible_text, fontsize=26, **font_kwargs)
+    _insert(source_page, (28, 78), visible_text, fontsize=26)
     pixmap = source_page.get_pixmap(dpi=180, alpha=False)
     source.close()
 
@@ -192,7 +223,6 @@ def docx_document(paragraphs: list[list[dict]], comments: str = "", custom_xml: 
 
 def xlsx_workbook(sheets: list[dict]) -> bytes:
     """Each sheet is name, optional state, rows of cells. A cell is str or {value, white}."""
-    sheet_xml = []
     overrides = [
         '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>',
         '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>',
@@ -322,6 +352,8 @@ def _sheet_xml(sheet: dict) -> str:
     for row_index, row in enumerate(sheet.get("rows", []), start=1):
         hidden = row.get("hidden") if isinstance(row, dict) else False
         values = row.get("cells") if isinstance(row, dict) else row
+        if not isinstance(values, list):
+            continue
         attr = ' hidden="1"' if hidden else ""
         cells = []
         for col_index, cell in enumerate(values, start=1):
@@ -333,7 +365,15 @@ def _sheet_xml(sheet: dict) -> str:
                 value = str(cell)
             ref = f"{_column_letter(col_index)}{row_index}"
             style = ' s="1"' if white else ""
-            cells.append(f'<c r="{ref}" t="inlineStr"{style}><is><t>{escape(value)}</t></is></c>')
+            formula = ""
+            if isinstance(cell, dict) and cell.get("formula"):
+                formula = str(cell["formula"])
+            if formula:
+                cells.append(
+                    f'<c r="{ref}"><f>{escape(formula)}</f><v>{escape(value)}</v></c>'
+                )
+            else:
+                cells.append(f'<c r="{ref}" t="inlineStr"{style}><is><t>{escape(value)}</t></is></c>')
         rows.append(f'<row r="{row_index}"{attr}>{"".join(cells)}</row>')
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">

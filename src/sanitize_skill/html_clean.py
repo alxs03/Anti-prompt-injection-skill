@@ -48,8 +48,9 @@ def extract_html(data: bytes) -> Extract:
         if text:
             titles.append(text)
     for meta in soup.find_all("meta"):
-        if meta.get("content"):
-            side.append(meta["content"])
+        content = meta.get("content")
+        if isinstance(content, str) and content:
+            side.append(content)
     root = soup.body or soup
     _walk(root, {"color": "#000000", "background-color": "#ffffff"}, False, rules, visible_parts, hidden, side)
     visible = cleanup_visible(visible_parts)
@@ -89,10 +90,24 @@ def _declarations(body: str) -> dict[str, str]:
     return found
 
 
+def _attr_text(tag: Tag, name: str) -> str:
+    value = tag.get(name)
+    return value if isinstance(value, str) else ""
+
+
+def _attr_list(tag: Tag, name: str) -> list[str]:
+    value = tag.get(name)
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    if isinstance(value, str):
+        return [value]
+    return []
+
+
 def _matches(selector: str, tag: Tag) -> bool:
     name = (tag.name or "").lower()
-    classes = {item.lower() for item in tag.get("class", [])}
-    element_id = (tag.get("id") or "").lower()
+    classes = {str(item).lower() for item in _attr_list(tag, "class")}
+    element_id = _attr_text(tag, "id").lower()
     if selector.startswith("."):
         return selector[1:] in classes
     if selector.startswith("#"):
@@ -116,8 +131,9 @@ def _computed(tag: Tag, inherited: dict[str, str], rules: list[tuple[str, dict[s
     for selector, declarations in rules:
         if _matches(selector, tag):
             style.update(declarations)
-    if tag.has_attr("style"):
-        style.update(_declarations(tag["style"]))
+    style_value = tag.get("style")
+    if isinstance(style_value, str):
+        style.update(_declarations(style_value))
     shorthand = style.get("background", "")
     if shorthand and "url(" not in shorthand and "gradient" not in shorthand:
         token = shorthand.split()[-1]
@@ -154,8 +170,10 @@ def _walk(tag, inherited, force_hidden, rules, visible_parts, hidden, side, forc
     style = _computed(tag, inherited, rules)
     own = _hard_category(tag, style)
     hard = force_hidden or own is not None
-    if tag.name == "input" and (tag.get("type") or "").lower() == "hidden":
-        hidden.append((tag.get("value") or "", "html_hidden_input"))
+    input_type = tag.get("type")
+    if tag.name == "input" and isinstance(input_type, str) and input_type.lower() == "hidden":
+        value = tag.get("value")
+        hidden.append((value if isinstance(value, str) else "", "html_hidden_input"))
         return
     if tag.name == "template":
         hard = True

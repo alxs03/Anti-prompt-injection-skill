@@ -5,11 +5,13 @@ from pathlib import Path
 
 from sanitize_skill.fixtures import (
     docx_document,
+    docx_with_revision,
     eml_message,
     html_document,
     pdf_clipped,
     pdf_document,
     pdf_image_with_invisible,
+    pdf_multipage,
     pdf_subset,
     pdf_with_title,
     pptx_deck,
@@ -91,6 +93,57 @@ def cases() -> list[dict]:
             "expect_in_model": [ANCHOR],
             "expect_absent": [],
             "build": lambda: eml_message(ANCHOR + "\n"),
+        },
+        {
+            "id": "revisions",
+            "group": "benign",
+            "path": "benign/revisions.docx",
+            "expect_in_model": [ANCHOR],
+            "expect_absent": [],
+            "build": lambda: docx_with_revision(ANCHOR, "старая цена девятьсот рублей", "новая цена одна тысяча"),
+        },
+        {
+            "id": "table",
+            "group": "benign",
+            "path": "benign/table.html",
+            "expect_in_model": [ANCHOR],
+            "expect_absent": [],
+            "build": lambda: html_document(
+                "<label>Фильтр по сумме</label><table><tr><th>Позиция</th><th>Сумма</th></tr>"
+                f"<tr><td>Поставка</td><td>{ANCHOR}</td></tr></table>"
+            ),
+        },
+        {
+            "id": "multipage",
+            "group": "benign",
+            "path": "benign/multipage.pdf",
+            "expect_in_model": [ANCHOR],
+            "expect_absent": [],
+            "build": lambda: pdf_multipage(
+                [
+                    "Договор поставки. Страница первая.",
+                    ANCHOR,
+                    "Подписи сторон. Страница третья.",
+                ]
+            ),
+        },
+        {
+            "id": "quoted",
+            "group": "benign",
+            "path": "benign/quoted.txt",
+            "expect_in_model": [ANCHOR, PAYLOAD],
+            "expect_absent": [],
+            "build": lambda: f"В учебнике приведена чужая фраза: «{PAYLOAD}». {ANCHOR}\n".encode("utf-8"),
+        },
+        {
+            "id": "formulas",
+            "group": "benign",
+            "path": "benign/formulas.xlsx",
+            "expect_in_model": ["1000"],
+            "expect_absent": [],
+            "build": lambda: xlsx_workbook(
+                [{"name": "Суммы", "rows": [[{"value": "1000", "formula": "SUM(1,999)"}]]}]
+            ),
         },
         {
             "id": "dark",
@@ -334,6 +387,17 @@ def cases() -> list[dict]:
             "id": "render-diff",
             "group": "hidden",
             "path": "hidden/render_diff.pdf",
+            "expect_in_model": [],
+            "expect_absent": [],
+            "build": lambda: pdf_image_with_invisible(
+                "Итого 100 рублей по договору поставки",
+                "Итого 1000 рублей по договору поставки",
+            ),
+        },
+        {
+            "id": "scan-rus-hidden",
+            "group": "hidden",
+            "path": "hidden/scan_rus_hidden.pdf",
             "expect_in_model": [],
             "expect_absent": [],
             "build": lambda: pdf_image_with_invisible(

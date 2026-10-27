@@ -5,13 +5,15 @@ from pathlib import Path
 
 from sanitize_skill.pipeline import sanitize_bytes
 
+_OCR_CASES = {"render-diff", "scan-rus-hidden"}
+
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "corpus"
 
 
 def evaluate(level: int = 2) -> dict:
     manifest = json.loads((CORPUS / "manifest.json").read_text(encoding="utf-8"))
-    groups = {"benign": [], "hidden": [], "visible_instruction": []}
+    groups: dict[str, list[dict]] = {"benign": [], "hidden": [], "visible_instruction": []}
     benign_mismatch = 0
     for case in manifest:
         data = (CORPUS / case["path"]).read_bytes()
@@ -49,7 +51,7 @@ def evaluate(level: int = 2) -> dict:
         "hidden_caught": sum(
             1
             for item in hidden
-            if item["id"] != "render-diff" and item["absent"] and item["verdict"] == "hidden_mismatch"
+            if item["id"] not in _OCR_CASES and item["absent"] and item["verdict"] == "hidden_mismatch"
         ),
         "visible_total": len(visible),
         "visible_reached_model": sum(1 for item in visible if item["present"]),

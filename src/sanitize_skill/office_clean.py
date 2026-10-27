@@ -1,6 +1,6 @@
 import io
-import zipfile
 import xml.etree.ElementTree as ET
+import zipfile
 
 from sanitize_skill.models import Extract, SanitizeError
 from sanitize_skill.patterns import has_signal
@@ -122,7 +122,7 @@ def _docx_tree(root, style_map, visible_parts, hidden) -> None:
         for run in _paragraph_runs(paragraph):
             text, deleted = _run_text(run)
             props = _effective_rpr(paragraph, run, style_map)
-            if deleted:
+            if deleted and has_signal(deleted):
                 hidden.append((deleted, "docx_revision"))
             if not text:
                 continue
@@ -140,7 +140,7 @@ def _paragraph_runs(paragraph):
     for child in list(paragraph):
         if child.tag == _w("r"):
             runs.append(child)
-        elif child.tag in {_w("hyperlink"), _w("ins"), _w("smartTag")}:
+        elif child.tag in {_w("hyperlink"), _w("ins"), _w("smartTag"), _w("del")}:
             runs.extend(node for node in list(child) if node.tag == _w("r"))
     return runs
 
@@ -197,8 +197,8 @@ def _docx_styles(files) -> dict[str, dict]:
     return found
 
 
-def _rpr(element) -> dict:
-    info = {"vanish": None, "color": None, "fill": None}
+def _rpr(element) -> dict[str, bool | str | None]:
+    info: dict[str, bool | str | None] = {"vanish": None, "color": None, "fill": None}
     if element is None:
         return info
     vanish = _first(element, "vanish")
@@ -317,7 +317,7 @@ def _xlsx_font_colors(files) -> list[str | None]:
         for font in fonts_node.findall(_s("font")):
             color = font.find(_s("color"))
             fonts.append(_attr(color, "rgb") if color is not None else None)
-    mapped = []
+    mapped: list[str | None] = []
     cell_xfs = root.find(_s("cellXfs"))
     if cell_xfs is None:
         return mapped
@@ -331,7 +331,7 @@ def _xlsx_font_colors(files) -> list[str | None]:
 
 
 def _hidden_columns(root) -> set[int]:
-    hidden = set()
+    hidden: set[int] = set()
     for col in root.iter(_s("col")):
         if (_attr(col, "hidden") or "0").lower() in {"1", "true"}:
             start = int(_attr(col, "min") or "0")

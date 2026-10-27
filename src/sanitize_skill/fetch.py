@@ -107,7 +107,7 @@ def _pick_public_ip(host: str) -> str:
         raise SanitizeError("dns failed") from exc
     chosen = ""
     for info in infos:
-        ip = info[4][0]
+        ip = str(info[4][0])
         if not _is_public(ipaddress.ip_address(ip)):
             raise SanitizeError("blocked address")
         if not chosen:

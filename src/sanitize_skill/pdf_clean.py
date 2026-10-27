@@ -178,7 +178,7 @@ def _common_color(colors: list[tuple[int, int, int]]) -> tuple[int, int, int]:
     for red, green, blue in colors:
         key = (red // 16, green // 16, blue // 16)
         counts[key] = counts.get(key, 0) + 1
-    red, green, blue = max(counts, key=counts.get)
+    red, green, blue = max(counts, key=lambda item: counts[item])
     return (red * 16 + 8, green * 16 + 8, blue * 16 + 8)
 
 

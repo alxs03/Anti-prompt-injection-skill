@@ -24,7 +24,8 @@ def extract_eml(data: bytes) -> Extract:
     for part in message.walk():
         if part.is_multipart():
             continue
-        payload = part.get_payload(decode=True) or b""
+        raw = part.get_payload(decode=True)
+        payload = raw if isinstance(raw, bytes) else b""
         filename = part.get_filename() or ""
         disposition = (part.get_content_disposition() or "").lower()
         if disposition == "attachment" or filename:

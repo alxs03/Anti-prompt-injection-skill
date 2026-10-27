@@ -114,6 +114,63 @@ def test_mixed_language_threshold_keeps_one_ocr_miss_and_rejects_a_changed_numbe
     assert layer_agrees(page, "Итого 100 рублей total", 0.7) is False
 
 
+def test_benign_revision_is_not_a_mismatch_but_an_injected_deletion_is():
+    from sanitize_skill.fixtures import docx_with_revision
+
+    benign = sanitize_bytes(
+        docx_with_revision(VISIBLE, "старая цена девятьсот рублей", "новая цена одна тысяча"),
+        filename="revisions.docx",
+        level=2,
+    )
+    assert VISIBLE in benign.visible_text
+    assert "старая цена" not in benign.visible_text
+    assert benign.evidence["verdict"] == "clean"
+    hidden = sanitize_bytes(
+        docx_with_revision(VISIBLE, PAYLOAD, "обычная правка"),
+        filename="revisions.docx",
+        level=2,
+    )
+    assert PAYLOAD not in hidden.visible_text
+    assert any(item["category"] == "docx_revision" for item in hidden.evidence["findings"])
+    assert hidden.evidence["verdict"] == "hidden_mismatch"
+
+
+def test_retention_drops_old_quarantine_and_journal_lines(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    from sanitize_skill.journal import purge_expired, retention_days
+
+    quarantine = tmp_path / "quarantine"
+    quarantine.mkdir()
+    old = quarantine / "oldhash"
+    fresh = quarantine / "newhash"
+    old.write_bytes(b"old")
+    fresh.write_bytes(b"new")
+    moment = datetime(2026, 10, 27, tzinfo=timezone.utc)
+    old_stamp = (moment - timedelta(days=20)).timestamp()
+    os_utime = __import__("os").utime
+    os_utime(old, (old_stamp, old_stamp))
+    journal = tmp_path / "files.jsonl"
+    journal.write_text(
+        "\n".join(
+            [
+                '{"time": "2026-10-01T00:00:00+00:00", "sha256": "oldhash"}',
+                '{"time": "2026-10-20T00:00:00+00:00", "sha256": "newhash"}',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    removed = purge_expired(tmp_path, 14, now=moment)
+    assert removed == 2
+    assert not old.exists()
+    assert fresh.exists()
+    kept = journal.read_text(encoding="utf-8")
+    assert "oldhash" not in kept
+    assert "newhash" in kept
+    assert retention_days(tmp_path / "missing.json") == 14
+
+
 def test_clip_and_mode7_are_withheld():
     from sanitize_skill.fixtures import pdf_clipped, pdf_document, pdf_subset
 
@@ -159,8 +216,8 @@ def test_homoglyph_hook_fires_for_pdf_and_docx():
 
 
 def test_render_diff_withholds_a_changed_amount(monkeypatch):
-    from sanitize_skill.fixtures import pdf_image_with_invisible
     from sanitize_skill import pdf_clean
+    from sanitize_skill.fixtures import pdf_image_with_invisible
 
     visible = "Итого 100 рублей по договору поставки"
     invisible = "Итого 1000 рублей по договору поставки"
@@ -175,8 +232,8 @@ def test_render_diff_withholds_a_changed_amount(monkeypatch):
 
 
 def test_matching_scan_layer_is_not_a_finding(monkeypatch):
-    from sanitize_skill.fixtures import pdf_image_with_invisible
     from sanitize_skill import pdf_clean
+    from sanitize_skill.fixtures import pdf_image_with_invisible
 
     data = pdf_image_with_invisible(VISIBLE, VISIBLE)
     monkeypatch.setattr(pdf_clean, "recognize_page", lambda page: VISIBLE)
@@ -187,8 +244,8 @@ def test_matching_scan_layer_is_not_a_finding(monkeypatch):
 
 
 def test_render_compare_skips_when_ocr_is_unavailable(monkeypatch):
-    from sanitize_skill.fixtures import pdf_image_with_invisible
     from sanitize_skill import pdf_clean
+    from sanitize_skill.fixtures import pdf_image_with_invisible
 
     data = pdf_image_with_invisible(VISIBLE, VISIBLE)
     monkeypatch.setattr(pdf_clean, "recognize_page", lambda page: None)
@@ -224,6 +281,15 @@ def test_real_ocr_compares_scan_with_the_rendered_page():
     assert "1000" not in diff.visible_text
     assert any(item["category"] == "render_mismatch" for item in diff.evidence["findings"])
     assert diff.model["flags"]["render_unverified"] is False
+    rus = sanitize_bytes(
+        Path("corpus/hidden/scan_rus_hidden.pdf").read_bytes(),
+        filename="scan_rus_hidden.pdf",
+        level=2,
+    )
+    assert "100 рублей" in rus.visible_text
+    assert "1000" not in rus.visible_text
+    assert any(item["category"] == "render_mismatch" for item in rus.evidence["findings"])
+    assert rus.model["flags"]["render_unverified"] is False
 
 
 def test_pdf_mode3_extra_is_withheld_and_scan_layer_is_kept():

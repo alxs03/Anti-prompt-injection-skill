@@ -5,11 +5,14 @@ from sanitize_skill import __version__
 from sanitize_skill.classify import classify_text
 from sanitize_skill.eml_clean import extract_eml
 from sanitize_skill.homoglyphs import scan_homoglyphs
-from sanitize_skill.html_clean import extract_html, homoglyph_hook as html_homoglyphs
+from sanitize_skill.html_clean import extract_html
+from sanitize_skill.html_clean import homoglyph_hook as html_homoglyphs
 from sanitize_skill.models import INSTRUCTION, Extract, Result, SanitizeError
-from sanitize_skill.office_clean import extract_office, homoglyph_hook as office_homoglyphs
+from sanitize_skill.office_clean import extract_office
+from sanitize_skill.office_clean import homoglyph_hook as office_homoglyphs
 from sanitize_skill.patterns import scan_patterns, sentence_flagged
-from sanitize_skill.pdf_clean import extract_pdf, homoglyph_hook as pdf_homoglyphs
+from sanitize_skill.pdf_clean import extract_pdf
+from sanitize_skill.pdf_clean import homoglyph_hook as pdf_homoglyphs
 from sanitize_skill.textutil import make_finding, sha256_bytes, sha256_text, shield_markers, split_sentences
 from sanitize_skill.unicode_norm import normalize
 

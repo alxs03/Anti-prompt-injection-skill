@@ -5,7 +5,7 @@ from pathlib import Path
 
 from sanitize_skill import __version__
 from sanitize_skill.fetch import fetch_url, public_locator
-from sanitize_skill.journal import export_files, journal_dir, quarantine, record_file
+from sanitize_skill.journal import export_files, journal_dir, purge_expired, quarantine, record_file, retention_days
 from sanitize_skill.models import DEFAULT_LEVEL, SanitizeError
 from sanitize_skill.pipeline import sanitize_bytes, sanitize_text
 
@@ -32,11 +32,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     try:
         if args.export_journal:
-            count = export_files(journal_dir(args.journal_dir), args.export_journal)
+            directory = journal_dir(args.journal_dir)
+            purge_expired(directory, retention_days())
+            count = export_files(directory, args.export_journal)
             print(f"exported={count}")
             return 0
         floor = load_floor()
         level = resolve_level(args.level, floor)
+        if not args.no_journal:
+            purge_expired(journal_dir(args.journal_dir), retention_days())
         result, locator, source_kind = _load(args, level)
         out = args.out or Path("sanitize-out") / result.sha256[:16]
         _write_outputs(result, out)

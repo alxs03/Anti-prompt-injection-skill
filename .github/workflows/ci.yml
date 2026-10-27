@@ -8,11 +8,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
       - name: Install Tesseract
         run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-rus
       - name: Install
@@ -23,3 +27,9 @@ jobs:
         run: python -m pytest -q
       - name: Corpus metrics
         run: python -m sanitize_skill.eval_corpus
+      - name: Lint, types, and coverage
+        if: matrix.python-version == '3.12'
+        run: |
+          ruff check src tests
+          mypy src
+          python -m pytest -q --cov=sanitize_skill --cov-report=term-missing --cov-fail-under=75
